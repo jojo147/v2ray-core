@@ -1,3 +1,5 @@
+// +build !confonly
+
 package net
 
 import (
@@ -115,6 +117,7 @@ func (c *connection) Write(b []byte) (int, error) {
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.done.Done() {
+		buf.ReleaseMulti(mb)
 		return io.ErrClosedPipe
 	}
 
