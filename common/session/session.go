@@ -66,4 +66,20 @@ type Content struct {
 	Protocol string
 
 	SniffingRequest SniffingRequest
+
+	Attributes map[string]interface{}
+}
+
+func (c *Content) SetAttribute(name string, value interface{}) {
+	if c.Attributes == nil {
+		c.Attributes = make(map[string]interface{})
+	}
+	c.Attributes[name] = value
+}
+
+func (c *Content) Attribute(name string) interface{} {
+	if c.Attributes == nil {
+		return nil
+	}
+	return c.Attributes[name]
 }

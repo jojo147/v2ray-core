@@ -286,6 +286,9 @@ func parseDomainRule(domain string) ([]*router.Domain, error) {
 	case strings.HasPrefix(domain, "full:"):
 		domainRule.Type = router.Domain_Full
 		domainRule.Value = domain[5:]
+	case strings.HasPrefix(domain, "keyword:"):
+		domainRule.Type = router.Domain_Plain
+		domainRule.Value = domain[8:]
 	default:
 		domainRule.Type = router.Domain_Plain
 		domainRule.Value = domain
@@ -354,12 +357,13 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		RouterRule
 		Domain     *StringList  `json:"domain"`
 		IP         *StringList  `json:"ip"`
-		Port       *PortRange   `json:"port"`
+		Port       *PortList    `json:"port"`
 		Network    *NetworkList `json:"network"`
 		SourceIP   *StringList  `json:"source"`
 		User       *StringList  `json:"user"`
 		InboundTag *StringList  `json:"inboundTag"`
 		Protocols  *StringList  `json:"protocol"`
+		Attributes string       `json:"attrs"`
 	}
 	rawFieldRule := new(RawFieldRule)
 	err := json.Unmarshal(msg, rawFieldRule)
@@ -399,7 +403,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 	}
 
 	if rawFieldRule.Port != nil {
-		rule.PortRange = rawFieldRule.Port.Build()
+		rule.PortList = rawFieldRule.Port.Build()
 	}
 
 	if rawFieldRule.Network != nil {
@@ -430,6 +434,10 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		for _, s := range *rawFieldRule.Protocols {
 			rule.Protocol = append(rule.Protocol, s)
 		}
+	}
+
+	if len(rawFieldRule.Attributes) > 0 {
+		rule.Attributes = rawFieldRule.Attributes
 	}
 
 	return rule, nil

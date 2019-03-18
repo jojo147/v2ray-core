@@ -1,7 +1,6 @@
 package router_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,17 +27,17 @@ func init() {
 	common.Must(filesystem.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(wd, "..", "..", "release", "config", "geosite.dat")))
 }
 
-func withOutbound(outbound *session.Outbound) context.Context {
-	return session.ContextWithOutbound(context.Background(), outbound)
+func withOutbound(outbound *session.Outbound) *Context {
+	return &Context{Outbound: outbound}
 }
 
-func withInbound(inbound *session.Inbound) context.Context {
-	return session.ContextWithInbound(context.Background(), inbound)
+func withInbound(inbound *session.Inbound) *Context {
+	return &Context{Inbound: inbound}
 }
 
 func TestRoutingRule(t *testing.T) {
 	type ruleTest struct {
-		input  context.Context
+		input  *Context
 		output bool
 	}
 
@@ -89,7 +88,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  context.Background(),
+					input:  &Context{},
 					output: false,
 				},
 			},
@@ -125,7 +124,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  context.Background(),
+					input:  &Context{},
 					output: false,
 				},
 			},
@@ -165,7 +164,7 @@ func TestRoutingRule(t *testing.T) {
 					output: true,
 				},
 				{
-					input:  context.Background(),
+					input:  &Context{},
 					output: false,
 				},
 			},
@@ -206,7 +205,7 @@ func TestRoutingRule(t *testing.T) {
 					output: false,
 				},
 				{
-					input:  context.Background(),
+					input:  &Context{},
 					output: false,
 				},
 			},
@@ -217,7 +216,7 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  session.ContextWithContent(context.Background(), &session.Content{Protocol: (&http.SniffHeader{}).Protocol()}),
+					input:  &Context{Content: &session.Content{Protocol: (&http.SniffHeader{}).Protocol()}},
 					output: true,
 				},
 			},
@@ -234,6 +233,46 @@ func TestRoutingRule(t *testing.T) {
 				{
 					input:  withInbound(&session.Inbound{Tag: "test2"}),
 					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
+				PortList: &net.PortList{
+					Range: []*net.PortRange{
+						{From: 443, To: 443},
+						{From: 1000, To: 1100},
+					},
+				},
+			},
+			test: []ruleTest{
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 443)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 1100)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 1005)}),
+					output: true,
+				},
+				{
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.LocalHostIP, 53)}),
+					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
+				Protocol:   []string{"http"},
+				Attributes: "attrs[':path'].startswith('/test')",
+			},
+			test: []ruleTest{
+				{
+					input:  &Context{Content: &session.Content{Protocol: "http/1.1", Attributes: map[string]interface{}{":path": "/test/1"}}},
+					output: true,
 				},
 			},
 		},

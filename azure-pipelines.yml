@@ -37,7 +37,7 @@ jobs:
   - checkout: self
   - task: GoTool@0
     inputs:
-      version: '1.11.5'
+      version: '1.12'
   - script: |
       bash ./testing/coverage/coverall
     workingDirectory: '$(Build.SourcesDirectory)'
@@ -53,13 +53,13 @@ jobs:
   
   variables:
     GOPATH: '$(system.defaultWorkingDirectory)'
-    BAZEL_VER: '0.22.0'
+    BAZEL_VER: '0.23.0'
 
   steps:
   - checkout: none
   - task: GoTool@0
     inputs:
-      version: '1.11.5'
+      version: '1.12'
   - script: |
       sudo apt-get -y update
       sudo apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
